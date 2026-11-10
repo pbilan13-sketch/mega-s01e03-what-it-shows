@@ -1,0 +1,66 @@
+---
+layout: runbook
+title: '#4471 split · three problems, not one'
+owner: pbilan13-sketch
+status: open
+reviewed: 2026-11-10
+signature: pbilan13-sketch
+---
+
+<script>
+  import ProblemTable from '#lib/kb/ProblemTable.svelte';
+  import QueueTimeline from '#lib/kb/QueueTimeline.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+</script>
+
+[#4471](/kb/incidents/4471) is marked **known: one issue, one fix queued**. Its own data says
+otherwise. The reports merged into it share a subject ("wrong day", "dates mixed up"), because
+[decision 0001](/kb/decisions/0001-dedupe-by-subject) merges on subject alone. They do not share a
+cause. Sorted by what actually went wrong, #4471 holds three problems, and each now has a ticket of
+its own.
+
+<Callout kind="warn">
+The queued parser fix closes only the <code>parser</code> problem. The <code>hint</code> and
+<code>one-day</code> reports will keep coming after it ships.
+</Callout>
+
+## What #4471 holds
+
+<ProblemTable ticket={4471} />
+
+## How each report was placed
+
+1. **One id, one report.** The ticket export comes in overlapping pages, so some reports appear
+   twice. Count unique ids (`uniqueById`), never rows.
+2. **The tenant decides, not intake.** The intake tag is a guess from the reporter's browser. The
+   cause comes from the tenant: its locale (day first or not) and its booking form (`causes.ts`).
+   Intake's tags disagree with the tenant's cause in both directions; the table shows by how much.
+3. **Read the outliers.** A few reports are not a day-month swap at all: the month stays, the day
+   moves by one ("Lisbon got Tuesday, Toronto got Monday", "every booking in June is one day off").
+   The desk already noted them (`desk-notes.json → oneDayMove`) but filed them under `parser` by
+   tenant. They are their own problem: time zones, not date order.
+
+## The three problems
+
+- **`parser`**: the shared date parser reads every date month first. Every day-first tenant is hit,
+  through every channel. This is the fix #4471 already has queued.
+- **`hint`**: `booking-v3` prints `MM/DD/YYYY` under its date field. People at day-first tenants
+  type what the hint says, and the form reads it day first. Only form reports from `booking-v3`
+  tenants. Fix the hint (or the form's reading), not the parser.
+- **`one-day`**: the date keeps its month and slides by a day between what was booked and what the
+  invite shows, and differs by where the invitee is. A time-zone / DST conversion bug.
+
+## Since April
+
+<QueueTimeline ticket={4471} />
+
+## What the desk should change
+
+- Re-open #4471 as the `parser` ticket only, and link the two new tickets from it.
+- Merge on cause, not subject: two reports with the same subject can have different causes, and two
+  with different subjects the same one (see [triage](/kb/triage/dedupe), *Try it*). Decision 0001 is
+  accepted and stays as written; replacing it needs a new decision record.
+- When a big ticket's table shows more than one row, it is more than one ticket.
+
+<RenderStamp {signature} />
