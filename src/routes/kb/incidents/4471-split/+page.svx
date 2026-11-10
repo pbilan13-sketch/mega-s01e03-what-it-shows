@@ -1,8 +1,8 @@
 ---
 layout: runbook
-title: '#4471 split · three problems, not one'
+title: '#4471 split · two causes, one closed ticket'
 owner: pbilan13-sketch
-status: open
+status: closed
 reviewed: 2026-11-10
 signature: pbilan13-sketch
 ---
@@ -14,18 +14,18 @@ signature: pbilan13-sketch
   import Callout from '#lib/kb/Callout.svelte';
 </script>
 
-[#4471](/kb/incidents/4471) is marked **known: one issue, one fix queued**. Its own data says
+[#4471](/kb/incidents/4471) was marked **known: one issue, one fix queued**. Its own table said
 otherwise. The reports merged into it share a subject ("wrong day", "dates mixed up"), because
 [decision 0001](/kb/decisions/0001-dedupe-by-subject) merges on subject alone. They do not share a
-cause. Sorted by what actually went wrong, #4471 holds three problems, and each now has a ticket of
-its own.
+cause. Each cause got a ticket of its own, and engineering has now closed #4471.
 
-<Callout kind="warn">
-The queued parser fix closes only the <code>parser</code> problem. The <code>hint</code> and
-<code>one-day</code> reports will keep coming after it ships.
+<Callout>
+#4471 closed 5 October. <code>parser</code>: fixed (<code>fix(dates): parse dd/mm for eu locales</code>).
+<code>hint</code>: won't fix, the booking-v3 form is retired. The parser fix alone would not have
+stopped the <code>hint</code> reports; retiring the form does.
 </Callout>
 
-## What #4471 holds
+## What #4471 held
 
 <ProblemTable ticket={4471} />
 
@@ -35,21 +35,22 @@ The queued parser fix closes only the <code>parser</code> problem. The <code>hin
    twice. Count unique ids (`uniqueById`), never rows.
 2. **The tenant decides, not intake.** The intake tag is a guess from the reporter's browser. The
    cause comes from the tenant: its locale (day first or not) and its booking form (`causes.ts`).
-   Intake's tags disagree with the tenant's cause in both directions; the table shows by how much.
-3. **Read the outliers.** A few reports are not a day-month swap at all: the month stays, the day
-   moves by one ("Lisbon got Tuesday, Toronto got Monday", "every booking in June is one day off").
-   The desk already noted them (`desk-notes.json → oneDayMove`) but filed them under `parser` by
-   tenant. They are their own problem: time zones, not date order.
+   Intake's tags disagree with the tenant's cause in both directions.
+3. **Read the outliers.** A few reports are not a day-month swap: the month stays, the day moves by
+   one ("Lisbon got Tuesday, Toronto got Monday"). The desk noted them (`desk-notes.json`) and files
+   them under their tenant's cause, so they count there. They are tracked in their own ticket,
+   because neither the parser fix nor retiring the form explains a one-day move.
 
-## The three problems
+## The problems
 
-- **`parser`**: the shared date parser reads every date month first. Every day-first tenant is hit,
-  through every channel. This is the fix #4471 already has queued.
-- **`hint`**: `booking-v3` prints `MM/DD/YYYY` under its date field. People at day-first tenants
-  type what the hint says, and the form reads it day first. Only form reports from `booking-v3`
-  tenants. Fix the hint (or the form's reading), not the parser.
-- **`one-day`**: the date keeps its month and slides by a day between what was booked and what the
-  invite shows, and differs by where the invitee is. A time-zone / DST conversion bug.
+- **`parser`**: the shared date parser read every date month first. Every day-first tenant was hit,
+  through every channel. Fixed.
+- **`hint`**: `booking-v3` printed `MM/DD/YYYY` under its date field. People at day-first tenants
+  typed what the hint said, and the form read it day first. Only form reports from `booking-v3`
+  tenants. Won't fix: the form is retired.
+- **`one-day`**: the date keeps its month and slides by a day, depending on where the invitee is: a
+  time-zone / DST conversion. Not in the engineering update. If one-day reports keep coming after
+  the parser fix, this is the ticket to reopen.
 
 ## Since April
 
@@ -57,7 +58,6 @@ The queued parser fix closes only the <code>parser</code> problem. The <code>hin
 
 ## What the desk should change
 
-- Re-open #4471 as the `parser` ticket only, and link the two new tickets from it.
 - Merge on cause, not subject: two reports with the same subject can have different causes, and two
   with different subjects the same one (see [triage](/kb/triage/dedupe), *Try it*). Decision 0001 is
   accepted and stays as written; replacing it needs a new decision record.

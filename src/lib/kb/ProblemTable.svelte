@@ -1,54 +1,57 @@
 <script lang="ts">
   import reports from '#lib/data/reports-4471.json';
-  import type { Report } from '#lib/kb/causes';
+  import notes from '#lib/data/desk-notes.json';
+  import { groupByCause, readAs, uniqueById, type Report } from '#lib/kb/causes';
   import { tenantOf } from '#lib/kb/locales';
-  import { groupByProblem, PROBLEMS } from '#lib/kb/problems';
+  import { problem } from '#lib/kb/problems';
 
   let { ticket }: { ticket: number } = $props();
 
+  // The desk's own view: unique ids, cause by tenant.
   const rows = (reports as Report[]).length;
-  const result = $derived(groupByProblem(reports as Report[], ticket, tenantOf));
-  const info = (p: string) => PROBLEMS.find((x) => x.id === p);
-  const tags = (t: Record<string, number>) =>
-    Object.entries(t)
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag, n]) => `${tag} ×${n}`)
-      .join(' · ');
+  const merged = $derived(uniqueById(reports as Report[]).filter((r) => r.mergedInto === ticket));
+  const groups = $derived(groupByCause(merged, tenantOf));
+  const oneDay = $derived(groups.map((g) => ({ cause: g.cause, n: readAs(g, notes.oneDayMove) })).filter((x) => x.n));
+  const num = (url?: string) => (url ? '#' + url.split('/').at(-1) : 'none');
 </script>
 
 <p class="sum">
-  <strong>{result.merged.length}</strong> reports merged into #{ticket}
-  ({rows} rows in the export, {rows - result.merged.length} of them repeats) ·
-  <strong>{result.groups.length}</strong> {result.groups.length === 1 ? 'problem' : 'problems'}
+  <strong>{merged.length}</strong> reports merged into #{ticket}
+  ({rows} rows in the export, {rows - merged.length} of them repeats) ·
+  <strong>{groups.length}</strong> {groups.length === 1 ? 'cause' : 'causes'} by tenant
 </p>
 
 <table>
   <thead>
-    <tr><th>problem</th><th>reports</th><th>tagged at intake as</th><th>tenants</th><th>seen</th><th>ticket</th></tr>
+    <tr><th>problem</th><th>reports</th><th>tenants</th><th>seen</th><th>ticket</th><th>outcome</th></tr>
   </thead>
   <tbody>
-    {#each result.groups as g (g.problem)}
-      {@const p = info(g.problem)}
+    {#each groups as g (g.cause)}
+      {@const p = problem(g.cause)}
       <tr>
-        <td><code>{g.problem}</code></td>
+        <td><code>{g.cause}</code></td>
         <td>{g.reports.length}</td>
-        <td class="tags">{tags(g.taggedAs)}</td>
         <td>{g.tenants}</td>
         <td>{g.firstSeen} → {g.lastSeen}</td>
-        <td>{#if p}<a href={p.ticket}>#{p.ticket.split('/').at(-1)}</a>{:else}none{/if}</td>
+        <td>{#if p}<a href={p.ticket}>{num(p.ticket)}</a>{:else}none{/if}</td>
+        <td class="out">{p?.outcome ?? ''}</td>
+      </tr>
+    {/each}
+    {#each oneDay as o (o.cause)}
+      {@const p = problem('one-day')}
+      <tr class="sub">
+        <td><code>one-day</code></td>
+        <td>{o.n}</td>
+        <td colspan="2">read as a one-day move; counted above under <code>{o.cause}</code></td>
+        <td><a href={p?.ticket}>{num(p?.ticket)}</a></td>
+        <td class="out">{p?.outcome}</td>
       </tr>
     {/each}
   </tbody>
 </table>
 
-<ul class="what">
-  {#each PROBLEMS as p (p.id)}
-    <li><code>{p.id}</code>: {p.what}</li>
-  {/each}
-</ul>
-
 <style>
   .sum { font-size: 1.1rem; }
-  .tags { color: var(--muted); font-size: 0.85em; }
-  .what { color: var(--muted); font-size: 0.9em; }
+  .out { color: var(--muted); font-size: 0.85em; }
+  .sub td { color: var(--muted); font-size: 0.9em; }
 </style>
