@@ -4,7 +4,7 @@ title: '#4471 split · two causes, one closed ticket'
 owner: pbilan13-sketch
 status: closed
 reviewed: 2026-11-10
-signature: pbilan13-sketch
+signature: 'v1.eyJzdWIiOiI1MjIxIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTQzMzYzMzksImV4cCI6MTc5NDQyMjczOX0.aRAENixr9eUrZ3g_kzDYG-vJfAgd-CuRyomuWuR_cBI'
 ---
 
 <script>
